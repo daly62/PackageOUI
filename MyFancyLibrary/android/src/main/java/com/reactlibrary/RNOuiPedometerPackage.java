@@ -17,15 +17,15 @@ public class RNOuiPedometerPackage implements ReactPackage {
 		List<NativeModule> modules = new ArrayList<>();
 
 		modules.add(new RNOuiPedometerModule(reactContext));
-
 		return modules;
 
 	}
 
-	@Override
+	// Deprecated from RN 0.47
 	public List<Class<? extends JavaScriptModule>> createJSModules() {
-		return Collections.emptyList();
+		return null;
 	}
+
 
 	@Override
 	public List<ViewManager> createViewManagers(ReactApplicationContext reactContext) {
