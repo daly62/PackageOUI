@@ -2,11 +2,13 @@ package com.reactlibrary;
 
 
 import android.content.Intent;
+import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
 
 import androidx.annotation.Nullable;
+import androidx.annotation.RequiresApi;
 import androidx.lifecycle.LifecycleOwner;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.Observer;
@@ -20,7 +22,7 @@ import com.facebook.react.bridge.ReactContextBaseJavaModule;
 import com.facebook.react.bridge.ReactMethod;
 import com.facebook.react.bridge.WritableArray;
 import com.facebook.react.bridge.WritableMap;
-import com.facebook.react.modules.core.DeviceEventManagerModule;
+
 
 
 import com.google.gson.Gson;
@@ -28,8 +30,14 @@ import com.reactlibrary.Database.Step;
 import com.reactlibrary.Database.StepRepository;
 import com.reactlibrary.Impl.OuiStepServiceImpl;
 
-import org.json.JSONArray;
 
+
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Comparator;
+import java.util.Date;
+import java.util.GregorianCalendar;
 import java.util.List;
 
 public class RNOuiPedometerModule extends ReactContextBaseJavaModule {
@@ -77,7 +85,7 @@ public class RNOuiPedometerModule extends ReactContextBaseJavaModule {
 	}
 
 	@ReactMethod
-	public void getNumberDailyByDates(String strDate, String endDate) {
+	public void getNumberDailyByDates(String strDate, String endDate,Promise promise) {
 		LiveData<List<Step>> list = stepRepository.fetchAllStepsByDates(Long.parseLong(strDate), Long.parseLong(endDate));
 
 		new Handler(Looper.getMainLooper()).post(() -> {
@@ -94,8 +102,7 @@ public class RNOuiPedometerModule extends ReactContextBaseJavaModule {
 				WritableMap params = Arguments.createMap();
 				// pass data instead of jsonData if data is a String
 				params.putString("data", jsonData);
-				reactContext.getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class)
-						.emit("onDataUpdate", params);
+				promise.resolve(params);
 
 				//double numberOfSteps =   steps.get(0).getValue() -steps.get(steps.size()-1).getValue();
 				//successCallback.invoke(numberOfSteps);
@@ -105,6 +112,89 @@ public class RNOuiPedometerModule extends ReactContextBaseJavaModule {
 
 
 	}
+
+
+	@RequiresApi(api = Build.VERSION_CODES.N)
+	@ReactMethod
+	public void getListDailyByDates(String strDate, String endDate, Promise promise) {
+		LiveData<List<Step>> list = stepRepository.fetchAllStepsByDates(Long.parseLong(strDate), Long.parseLong(endDate));
+		SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy");
+		Date date1 = new Date(Long.parseLong(strDate));
+		Date date2 = new Date(Long.parseLong(endDate));
+
+		date1.setHours(0);
+		date1.setMinutes(0);
+		date1.setSeconds(0);
+
+		date2.setHours(0);
+		date2.setMinutes(0);
+		date2.setSeconds(0);
+
+
+		List<Date> datesInRange = getDatesBetween(date1, date2);
+
+
+		new Handler(Looper.getMainLooper()).post(() -> {
+			WritableArray data = Arguments.createArray();
+			list.observeForever(steps -> {
+				if (!reactContext.hasActiveCatalystInstance() || steps == null) {
+					promise.resolve(null);
+					return;
+				}
+				//if (steps.size() > 0) {
+
+				for (Date date : datesInRange) {
+
+					double stepNumber = getNumberStep(date,steps);
+
+					WritableMap dateMap = Arguments.createMap();
+					dateMap.putString("date", date.toString());
+					dateMap.putDouble("value", stepNumber);
+
+					data.pushMap(dateMap);
+
+				}
+				promise.resolve(data);
+
+			});
+		});
+
+
+	}
+
+	@ReactMethod
+	public void getListByDates(String strDate, String endDate, Promise promise) {
+		LiveData<List<Step>> list = stepRepository.fetchAllStepsByDates(Long.parseLong(strDate), Long.parseLong(endDate));
+
+		new Handler(Looper.getMainLooper()).post(() -> {
+			WritableArray data = Arguments.createArray();
+			list.observeForever(steps -> {
+				if (!reactContext.hasActiveCatalystInstance() || steps == null) {
+					promise.resolve(null);
+					return;
+				}
+
+				if (steps.size() > 0) {
+
+					for (Step step : steps) {
+
+						WritableMap stepMap = Arguments.createMap();
+						stepMap.putDouble("value", step.getValue());
+						stepMap.putDouble("timeStamp", step.getCreatedAt());
+
+						data.pushMap(stepMap);
+					}
+				}
+				promise.resolve(data);
+				//double numberOfSteps =   steps.get(0).getValue() -steps.get(steps.size()-1).getValue();
+				//successCallback.invoke(numberOfSteps);
+
+			});
+		});
+
+
+	}
+
 
 	@ReactMethod
 	public void startService() {
@@ -120,5 +210,50 @@ public class RNOuiPedometerModule extends ReactContextBaseJavaModule {
 		//	mSensorManager.stopAutoUpdate(reactContext);
 	}
 
+	public static List<Date> getDatesBetween(
+			Date startDate, Date endDate) {
+
+		List<Date> datesInRange = new ArrayList<>();
+		Calendar calendar = new GregorianCalendar();
+		calendar.setTime(startDate);
+
+		Calendar endCalendar = new GregorianCalendar();
+		endCalendar.setTime(endDate);
+
+		while (calendar.before(endCalendar)) {
+			Date result = calendar.getTime();
+			datesInRange.add(result);
+			calendar.add(Calendar.DATE, 1);
+		}
+		return datesInRange;
+	}
+
+
+	@RequiresApi(api = Build.VERSION_CODES.N)
+	public static double getNumberStep(
+			Date day, List<Step> steps) {
+		double numberSteps = 0;
+		List<Step> mFinalList = new ArrayList<>();
+
+		for (Step step : steps) {
+			Long time = step.getCreatedAt();
+			Long dayTime = day.getTime();
+			if (time > dayTime && time < dayTime + 60 * 60 * 1000 * 24) {
+				mFinalList.add(step);
+			}
+		}
+		if (mFinalList.size() > 0) {
+			mFinalList.sort(new Comparator<Step>() {
+				@Override
+				public int compare(Step o1, Step o2) {
+					return (int) (o1.getValue() - o2.getValue());
+				}
+			});
+
+			numberSteps = Math.abs(mFinalList.get(0).getValue() - mFinalList.get(mFinalList.size() - 1).getValue());
+
+		}
+		return numberSteps;
+	}
 
 }
