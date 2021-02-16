@@ -39,6 +39,7 @@ import java.util.Comparator;
 import java.util.Date;
 import java.util.GregorianCalendar;
 import java.util.List;
+import java.util.TimeZone;
 
 public class RNOuiPedometerModule extends ReactContextBaseJavaModule {
 
@@ -148,7 +149,7 @@ public class RNOuiPedometerModule extends ReactContextBaseJavaModule {
 					double stepNumber = getNumberStep(date,steps);
 
 					WritableMap dateMap = Arguments.createMap();
-					dateMap.putString("date", date.toString());
+					dateMap.putString("date", convertDate(date));
 					dateMap.putDouble("value", stepNumber);
 
 					data.pushMap(dateMap);
@@ -228,6 +229,16 @@ public class RNOuiPedometerModule extends ReactContextBaseJavaModule {
 		return datesInRange;
 	}
 
+	public static String convertDate(Date date)
+	{
+		SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSXXX");
+		sdf.setTimeZone(TimeZone.getDefault());
+		String text = sdf.format(date);
+		return text;
+	}
+
+
+
 
 	@RequiresApi(api = Build.VERSION_CODES.N)
 	public static double getNumberStep(
@@ -255,5 +266,7 @@ public class RNOuiPedometerModule extends ReactContextBaseJavaModule {
 		}
 		return numberSteps;
 	}
+
+
 
 }
