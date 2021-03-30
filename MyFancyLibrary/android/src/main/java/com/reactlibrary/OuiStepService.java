@@ -224,7 +224,7 @@ public abstract class OuiStepService extends Service implements SensorEventListe
 
 						storeRawSteps(steps);
 
-						stepRepository.insertStep(new Date().getTime(), event.values[0]);
+						stepRepository.insertStep(new Date().getTime(), event.values[0],"STEP_COUNTER");
 						Log.d(TAG, "insertStep called ==> timestamp:" + event.timestamp);
 
 						//Store the number of zero steps if none yet
@@ -286,6 +286,9 @@ public abstract class OuiStepService extends Service implements SensorEventListe
 			storeAccelerometreSteps(stepCount);
 
 			lastStepTimeNs = timeNs;
+			stepRepository.insertStep(new Date().getTime(), 1,"ACCELEROMETER");
+
+
 		}
 		oldVelocityEstimate = velocityEstimate;
 	}

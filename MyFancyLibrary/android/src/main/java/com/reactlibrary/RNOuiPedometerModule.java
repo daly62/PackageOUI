@@ -1,6 +1,7 @@
 package com.reactlibrary;
 
 
+import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.os.Build;
 import android.os.Handler;
@@ -119,7 +120,7 @@ public class RNOuiPedometerModule extends ReactContextBaseJavaModule {
 	@ReactMethod
 	public void getListDailyByDates(String strDate, String endDate, Promise promise) {
 		LiveData<List<Step>> list = stepRepository.fetchAllStepsByDates(Long.parseLong(strDate), Long.parseLong(endDate));
-		SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy");
+		@SuppressLint("SimpleDateFormat") SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy");
 		Date date1 = new Date(Long.parseLong(strDate));
 		Date date2 = new Date(Long.parseLong(endDate));
 
@@ -147,11 +148,9 @@ public class RNOuiPedometerModule extends ReactContextBaseJavaModule {
 				for (Date date : datesInRange) {
 
 					double stepNumber = getNumberStep(date,steps);
-
 					WritableMap dateMap = Arguments.createMap();
 					dateMap.putString("date", convertDate(date));
 					dateMap.putDouble("value", stepNumber);
-
 					data.pushMap(dateMap);
 
 				}

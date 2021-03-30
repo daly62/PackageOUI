@@ -21,11 +21,12 @@ public class StepRepository {
 		stepDatabase = Room.databaseBuilder(context, StepDatabase.class, DB_NAME).build();
 	}
 
-	public void insertStep(Long timeStamp, double value) {
+	public void insertStep(Long timeStamp, double value,String type) {
 
 		Step step = new Step();
 		step.setCreatedAt(timeStamp);
 		step.setValue(value);
+		step.setType(type);
 		insertStep(step);
 	}
 

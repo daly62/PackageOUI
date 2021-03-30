@@ -20,6 +20,8 @@ public class Step implements Serializable {
 
 	private double value;
 
+	private String type;
+
 
 	public int getId() {
 		return id;
@@ -44,4 +46,13 @@ public class Step implements Serializable {
 	public void setValue(double value) {
 		this.value = value;
 	}
+
+	public String getType() {
+		return type;
+	}
+
+	public void setType(String type) {
+		this.type = type;
+	}
+
 }
